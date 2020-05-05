@@ -1,16 +1,32 @@
 all: test provider
 
-build/:
-	mkdir -p $@
-
 test:
 	go test -v ./netbox/...
 
+
+reconfigure: setup_util
+	@echo
+	@echo !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	@echo About to destroy everything in Netbox and reconfigure now!
+	@echo !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	@echo
+	utils/setup -destroyAll
+
+reconfigure_testacc: reconfigure
+	go clean -testcache
+	TF_ACC=1 go test -v ./netbox/... -run="TestAcc"
+
 testacc:
 	@echo
-	@echo ============================================================
+	@echo !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	@echo For tests to work, your NetBox must be configured correctly.
+	@echo If tests fail due to configuration errors, you may need to either
+	@echo run 'make reconfigure' and rerun 'make testacc'
+	@echo -OR-
+	@echo run 'make reconfigure_testacc'
+	@echo !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	@echo
+	go clean -testcache
 	TF_ACC=1 go test -v ./netbox/... -run="TestAcc"
 
 provider:
@@ -26,3 +42,7 @@ provider:
 
 clean:
 	rm -rf build/
+	rm -f utils/setup
+
+setup_util:
+	cd utils; go build setup.go
